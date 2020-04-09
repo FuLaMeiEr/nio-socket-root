@@ -9,10 +9,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -32,8 +29,8 @@ public class NioSocketServer {
         this.flag = flag;
     }
 
-    private static Map<String, SocketChannel> clients
-            = new ConcurrentHashMap<String, SocketChannel>();
+    private Set<SocketChannel> keylist = Collections
+            .synchronizedSet(new HashSet<SocketChannel>());
 
 
     public void start() {
@@ -79,9 +76,9 @@ public class NioSocketServer {
 
         socketChannel.register(selectionKey.selector(), SelectionKey.OP_READ, ByteBuffer.allocate(bufferSize));
 
-        clients.put("key", socketChannel);
+        keylist.add(socketChannel);
 
-        System.out.println("已连接！当前连接数：" + clients.size());
+        System.out.println("已连接");
 
     }
 }
