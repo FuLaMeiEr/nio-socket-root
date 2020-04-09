@@ -28,7 +28,7 @@ public class NioSocketClient {
 
             ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-            while (sendCount < 10000) {
+            while (sendCount < 10) {
                 buffer.clear();
                 //向服务端发送消息
                 buffer.put(("发送连接" + sendCount).getBytes());

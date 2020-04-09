@@ -1,11 +1,19 @@
 package com.example.demo.server;
 
+import org.springframework.boot.web.servlet.server.Session;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @ClassName
@@ -14,11 +22,19 @@ import java.util.Iterator;
  * @Date Created in 16:59 2020/4/8
  **/
 public class NioSocketServer {
+
+    private int bufferSize = 1024;
+    private String localCharset = "UTF-8";
+
     private volatile byte flag = 1;
 
     public void setFlag(byte flag) {
         this.flag = flag;
     }
+
+    private static Map<String, SocketChannel> clients
+            = new ConcurrentHashMap<String, SocketChannel>();
+
 
     public void start() {
         //创建serverSocketChannel，监听8888端口
@@ -32,12 +48,8 @@ public class NioSocketServer {
 
             System.out.println("服务端开始工作：");
 
-            //创建消息处理器
-            ServerHandlerBs handler = new ServerHandlerImpl(1024);
-
             while (flag == 1) {
                 selector.select();
-                System.out.println("开始处理请求 ： ");
                 //获取selectionKeys并处理
                 Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
                 while (keyIterator.hasNext()) {
@@ -45,22 +57,31 @@ public class NioSocketServer {
                     try {
                         //连接请求
                         if (key.isAcceptable()) {
-                            handler.handleAccept(key);
-                        }
-                        //读请求
-                        if (key.isReadable()) {
-                            System.out.println(handler.handleRead(key));
+                            handleAccept(key);
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    //处理完后移除当前使用的key
-                    keyIterator.remove();
                 }
-                System.out.println("完成请求处理。");
+
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public void handleAccept(SelectionKey selectionKey) throws IOException {
+
+        SocketChannel socketChannel = ((ServerSocketChannel) selectionKey.channel()).accept();
+
+        socketChannel.configureBlocking(false);
+
+        socketChannel.register(selectionKey.selector(), SelectionKey.OP_READ, ByteBuffer.allocate(bufferSize));
+
+        clients.put("key", socketChannel);
+
+        System.out.println("已连接！当前连接数：" + clients.size());
+
     }
 }
