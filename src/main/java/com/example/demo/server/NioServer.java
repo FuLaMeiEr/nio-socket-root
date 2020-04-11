@@ -21,7 +21,6 @@ public class NioServer {
 
     private int port;
     private Selector selector;
-    private ExecutorService service = Executors.newFixedThreadPool(5);
 
     public static void main(String[] args) {
         new NioServer(8080).start();
@@ -72,7 +71,7 @@ public class NioServer {
                             if (key.isAcceptable()) {
                                 accept(key);
                             } else {
-                                service.submit(new NioServerHandler(key));
+                                nioServerHandler(key);
                             }
                         } else {
                             continue;
@@ -86,40 +85,32 @@ public class NioServer {
         }
     }
 
-    public static class NioServerHandler implements Runnable {
 
-        private SelectionKey selectionKey;
-
-        public NioServerHandler(SelectionKey selectionKey) {
-            this.selectionKey = selectionKey;
-        }
-
-        @Override
-        public void run() {
-            int count = 0;
-            try {
-                if (selectionKey.isReadable()) {
-                    SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
-                    ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    try {
-                        count = socketChannel.read(buffer);
-                    } catch (IOException e) {
-                        selectionKey.cancel();
-                        socketChannel.socket().close();
-                        socketChannel.close();
-                        return;
-                    }
-                    buffer.flip();
-                    System.out.println("收到客户端" + socketChannel.socket().getInetAddress().getHostName() + "的数据：" + new String(buffer.array()));
-                    //将数据添加到key中
-                    ByteBuffer outBuffer = ByteBuffer.wrap(buffer.array());
-                    socketChannel.write(outBuffer);
+    public void nioServerHandler(SelectionKey selectionKey) {
+        int count = 0;
+        try {
+            if (selectionKey.isReadable()) {
+                SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                try {
+                    count = socketChannel.read(buffer);
+                } catch (IOException e) {
                     selectionKey.cancel();
+                    socketChannel.socket().close();
+                    socketChannel.close();
+                    return;
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+                buffer.flip();
+                System.out.println("收到客户端" + socketChannel.socket().getInetAddress().getHostName() + "的数据：" + new String(buffer.array()));
+                //将数据添加到key中
+                ByteBuffer outBuffer = ByteBuffer.wrap(buffer.array());
+                socketChannel.write(outBuffer);// 将消息回送给客户端
+                selectionKey.cancel();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
     }
 }
 
