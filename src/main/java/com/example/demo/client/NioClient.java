@@ -21,15 +21,10 @@ public class NioClient {
     private Selector selector;
 
     public static void main(String[] args) {
+        NioClient client = new NioClient();
         for (int i = 0; i < 10000; i++) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    NioClient client = new NioClient();
-                    client.connect(host, port);
-                    client.listen();
-                }
-            }).start();
+            client.connect(host, port);
+            //client.listen();
         }
     }
 
